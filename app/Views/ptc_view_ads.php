@@ -23,7 +23,7 @@
             </div>
         </div>
     </div>
-    <iframe id="ads" src="https://nemo-pay.online/" frameborder="0" style="width: 100%; height: calc(100vh - 75px);" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+    <iframe id="ads" src="<?= $ads['url'] ?>" frameborder="0" style="width: 100%; height: calc(100vh - 75px);" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
     
     <div class="modal fade" id="ptcCaptcha" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -50,36 +50,37 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
 
     <script>
-    const timer = 10;
-    const url = '';
-    let countdown = timer - 1
+    const timer = <?= $ads['timer'] ?>;
+    const url = '<?= $ads['url'] ?>';
+    let countdown = timer - 1;
 
     $(() => {
-        const $selectCaptcha = $('#selectCaptcha')
-        const $ptcCountdown = $('#ptcCountdown')
+        const $selectCaptcha = $('#selectCaptcha');
+        const $ptcCountdown = $('#ptcCountdown');
 
         // Tampilkan captcha pertama
-        const current = $selectCaptcha.val()
-        $(`#${current}`).show()
+        const current = $selectCaptcha.val();
+        $(`#${current}`).show();
 
         // Countdown logic
         const count = setInterval(() => {
-        if (countdown < 0) {
-            $('#ptcCaptcha').modal('show')
-            clearInterval(count)
-            return
-        }
+            if (countdown < 0) {
+                $('#ptcCaptcha').modal('show');
+                clearInterval(count);
+                return;
+            }
 
-        const label = countdown === 1 ? 'second' : 'seconds'
-        $ptcCountdown.text(`${countdown} ${label}`)
+            const label = countdown === 1 ? 'second' : 'seconds';
+            $ptcCountdown.text(`${countdown} ${label}`);
 
-        if (document.hasFocus()) countdown--
+            if (document.hasFocus())
+                countdown--
         }, 1000)
 
         // Klik tombol verify
         $('#verify').on('click', () => {
-        const win = window.open(url, '_blank')
-        if (win) win.focus()
+            const win = window.open(url, '_blank');
+            if (win) win.focus();
         })
     })
     </script>

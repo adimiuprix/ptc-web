@@ -54,10 +54,10 @@ class Ptc extends BaseController
         }
 
         // Menampilkan data dari iklan yang di view berdasarkan id
-        $ads = $this->m_ptc->getAdById($id);
+        $adsDetail = $this->m_ptc->getAdById($id);
 
         // Memeriksa apakah nilainya ada atau tidak null
-        if (! $ads) {
+        if (! $adsDetail) {
             return redirect()
                 ->to('/ptc')
                 ->with('message', $this->faucet_alert('danger', 'Invalid Ad'));
@@ -66,7 +66,9 @@ class Ptc extends BaseController
         // set kunci 'start_view' dengan nilai timestamp saat ini dan simpan ke session
         session()->set('start_view', time());
 
-        return view('ptc_view_ads');
+        return $this->response->setBody(view('ptc_view_ads', [
+                'ads' => $adsDetail
+            ]));
     }
 
     public function verify($id = 0)
