@@ -46,23 +46,27 @@ class Ptc extends BaseController
 
     public function view($id = 0)
     {
+        // cek apakah id iklan berupa integer
         if (!is_numeric($id)) {
-            session()->setFlashdata('message', $this->faucet_alert('danger', 'Invalid Ad'));
-            return redirect()->to('/ptc');
+            return redirect()
+                ->to('/ptc')
+                ->with('message', $this->faucet_alert('danger', 'Invalid Ad'));
         }
 
-        $this->data['ads'] = $this->m_ptc->get_ads_from_id($id);
+        // Menampilkan data dari iklan yang di view berdasarkan id
+        $ads = $this->m_ptc->getAdById($id);
 
-        if (!$this->data['ads']) {
-            session()->setFlashdata('message', $this->faucet_alert('danger', 'Invalid Ad'));
-            return redirect()->to('/ptc');
+        // Memeriksa apakah nilainya ada atau tidak null
+        if (! $ads) {
+            return redirect()
+                ->to('/ptc')
+                ->with('message', $this->faucet_alert('danger', 'Invalid Ad'));
         }
 
-        $this->data['captcha_display'] = get_captcha($this->data['settings'], base_url(), 'ptc_captcha');
-
+        // set kunci 'start_view' dengan nilai timestamp saat ini dan simpan ke session
         session()->set('start_view', time());
 
-        return view('user_template/ptc_view_ad', $this->data);
+        return view('ptc_view_ads');
     }
 
     public function verify($id = 0)

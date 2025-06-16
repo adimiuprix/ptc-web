@@ -14,5 +14,6 @@ $routes->post('proses', 'Register::proses');
 $routes->get('dashboard', 'Dashboard::index');
 
 $routes->get('ptc', 'Ptc::index');
+$routes->get('ptc/view/(:num)', 'Ptc::view/$1');
 
 $routes->get('logout', 'Logout::proses');
