@@ -60,26 +60,23 @@ class M_ptc extends Model
         ]);
     }
 
-    public function addView(int $adId): void
+    public function addView(int $adsId): void
     {
-        $this->update($adId, [
+        $this->update($adsId, [
             'views' => new \CodeIgniter\Database\RawSql('views + 1'),
         ]);
     }
 
-    public function setCompleted(int $adId): void
-    {
-        $this->update($adId, [
-            'status' => 'completed',
-        ]);
-    }
+    public function setCompleted(int $id)
+	{
+		return $this->update($id, ['status' => 'completed']);
+	}
 
-    public function insertHistory(int $userId, int $adId, float $amount): void
+    public function insertHistory(int $userId, int $adsId, float $amount): void
     {
-        $this->db->table('ptc_history')->insert([
+        $this->db->table('ptc_histories')->insert([
             'user_id'    => $userId,
-            'ip_address' => service('request')->getIPAddress(),
-            'ad_id'      => $adId,
+            'ads_id'      => $adsId,
             'amount'     => $amount,
             'claim_time' => time(),
         ]);

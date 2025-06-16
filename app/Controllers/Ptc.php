@@ -74,7 +74,6 @@ class Ptc extends BaseController
 
     public function verify($id = 0)
     {
-        session()->remove('start_view');
         $user_id = session()->get('user_id');
 
         if (!is_numeric($id)) {
@@ -82,43 +81,49 @@ class Ptc extends BaseController
         }
 
         $adsDetail = $this->m_ptc->getAdById($id);
-        
+
         $startTime = session()->get('start_view') ?? time();
-        
+
         if (time() - $startTime < $adsDetail['timer']) {
-            return redirect()
-            ->to('ptc')
-            ->with('message', $this->ptc_alert('danger', 'Invalid Click'));
+            return redirect()->to('ptc')->with('message', $this->ptc_alert('danger', 'Invalid Click'));
         }
 
+        // Hapus setelah pengecekan berhasil
+        session()->remove('start_view');
+
+        // Periksa apakah 'views' lebih besar dari 'total_view'
         if ($adsDetail['views'] >= $adsDetail['total_view']) {
             session()->setFlashdata('message', $this->ptc_alert('danger', 'This Ad has reached maximum views'));
             return redirect()->to('/ptc');
         }
 
+        // Periksa apakah ads bisa di claim pengguna
         $check = $this->m_ptc->verify($user_id, $id);
 
+        // Jika ads tidak bisa di claim
         if (!$check) {
             session()->setFlashdata('message', $this->ptc_alert('danger', 'Invalid Ad'));
             return redirect()->to('ptc');
         }
 
+        // Setelah pengecekan iklan berhasil, update saldo pengguna sebagai reward
         $this->m_ptc->updateUser($user_id, $adsDetail['reward']);
 
-        // $this->m_ptc->addView($ad['id']);
-        // if (($ad['views'] + 1) == $ad['total_view']) {
-        //     $this->m_ptc->completed($ad['id']);
-        // }
+        // Menambahkan jumlah views +1
+        $this->m_ptc->addView($adsDetail['id']);
 
-        // $this->m_ptc->insert_history($this->data['user']['id'], $ad['id'], $ad['reward']);
+        // Periksa jika views = total_view maka tandai status sebagai completed
+        if (($adsDetail['views'] + 1) == $adsDetail['total_view']) {
+            $this->m_ptc->setCompleted($adsDetail['id']);
+        }
 
-        // if ($this->data['user']['fail'] > 0) {
-        //     $this->resetFail($this->data['user']['id']);
-        // }
+        // Memasukkan data baru ke table ptc_histories
+        $this->m_ptc->insertHistory($user_id, $adsDetail['id'], $adsDetail['reward']);
 
-        // session()->setFlashdata('sweet_message', $this->faucet_sweet_alert('success', $this->currency($ad['reward'], $this->data['settings']['currency_rate']) . ' has been added to your balance'));
-
-        // return redirect()->to('/ptc');
+        // Membuat pesan flash message dengan sweatallert2
+        session()->setFlashdata('sweet_message', $this->sweetAlert('success', '40 token has been added to your balance'));
+        
+        return redirect()->to('ptc');
     }
 
     protected function ptc_alert($type, $content): string
@@ -127,23 +132,10 @@ class Ptc extends BaseController
         return '<div class="alert text-center alert-' . $type . '">' . $icon . ' ' . $content . '</div>';
     }
 
-    protected function faucet_sweet_alert($type, $content): string
+    protected function sweetAlert($type, $content): string
     {
         $title = ($type === 'success') ? 'Good job!' : 'Error!';
         return "<script> Swal.fire('" . $title . "', '" . $content . "', '" . $type . "')</script>";
-    }
-
-    public function resetFail($userId): void
-    {
-        $db = \Config\Database::connect();
-        $builder = $db->table('users');
-        $builder->set('fail', '0')->where('id', $userId)->update();
-    }
-
-    protected function currency($amount, $rate): string
-    {
-        $token = $amount / $rate;
-        return $token . ($token > 1 ? ' tokens' : ' token');
     }
 
     protected function verifyCloudFlareTurnstile(): bool

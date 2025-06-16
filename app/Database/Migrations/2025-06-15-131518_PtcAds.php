@@ -58,7 +58,7 @@ class PtcAds extends Migration
                 'null'  => false
             ],
             'status' => [
-                'type'       => 'ENUM("active", "inactive")',
+                'type'       => 'ENUM("active", "inactive", "completed")',
                 'default'        => 'active',
             ],
             'option_id' => [
