@@ -42,32 +42,22 @@ class M_ptc extends Model
         return $this->find($id);
     }
 
-    public function verify(int $userId, int $adId): bool
+    public function verify($user_id, $ads_id)
     {
-        $past = time() - 86400;
-        $ipAddress = service('request')->getIPAddress();
-
-        $sql = "
-            SELECT ad_id FROM ptc_history 
-            WHERE ad_id = ? 
-                AND claim_time > ? 
-                AND (ip_address = ? OR user_id = ?)
-        ";
-
-        $query = $this->db->query($sql, [$adId, $past, $ipAddress, $userId]);
-
-        return $query->getNumRows() === 0;
+        return $this->db->table('ptc_histories')
+            ->where('ads_id', $ads_id)
+            ->where('user_id', $user_id)
+            ->where('claim_time >', time() - 86400)
+            ->countAllResults() === 0;
     }
 
     public function updateUser(int $userId, float $amount): void
     {
-        $builder = $this->db->table('users');
-        $builder->where('id', $userId);
-        $builder->set('balance', "balance + {$amount}", false);
-        $builder->set('total_earned', "total_earned + {$amount}", false);
-        $builder->set('last_active', time());
-        $builder->set('token', random_string('alnum', 30));
-        $builder->update();
+        $balance = $this->db->table('users')->select('balance')->where('id', $userId)->get()->getRow()->balance;
+
+        $this->db->table('users')->where('id', $userId)->update([
+            'balance'       => $balance + $amount,
+        ]);
     }
 
     public function addView(int $adId): void

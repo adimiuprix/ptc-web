@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="<?= site_url('public/app.min.css') ?>" id="bootstrap-style" rel="stylesheet" type="text/css" />
     <link href="<?= site_url('public/styles.css') ?>" rel="stylesheet" type="text/css" />
-
 </head>
 
 
@@ -31,13 +30,14 @@
                 <div class="modal-header">
                     <h5 class="modal-title">Selesaikan captcanya cuk!!!</h5>
                 </div>
+                <style>
+                </style>
                 <div class="modal-body">
-                    <form action="<?= site_url('/ptc/verify/') ?>" method="POST">
-                        <center>
-                            <!-- captcha display -->
-                        </center>
+                    <form action="<?= site_url('ptc/verify/' . $ads['id']); ?>" method="POST">
                         <?= csrf_field() ?>
-                        <input type="hidden" name="token" value="user_token">
+                        <center>
+                            <div class="cf-turnstile" data-sitekey="0x4AAAAAABhLBeIdpHHw_-Up" data-size="flexible"></div>
+                        </center>
                         <button id="verify" class="btn btn-success btn-block" type="submit">Verify</button>
                     </form>
                 </div>
@@ -48,6 +48,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
     <script>
     const timer = <?= $ads['timer'] ?>;

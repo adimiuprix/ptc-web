@@ -15,5 +15,6 @@ $routes->get('dashboard', 'Dashboard::index');
 
 $routes->get('ptc', 'Ptc::index');
 $routes->get('ptc/view/(:num)', 'Ptc::view/$1');
+$routes->post('ptc/verify/(:num)', 'Ptc::verify/$1');
 
 $routes->get('logout', 'Logout::proses');

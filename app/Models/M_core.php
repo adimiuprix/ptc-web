@@ -170,23 +170,6 @@ class M_core extends Model
         return $this->db->insertID();
     }
 
-    public function addExp($userId, $amount): void
-    {
-        $this->db->table('users')
-            ->where('id', $userId)
-            ->set('exp', "exp + $amount", false)
-            ->set('claims', "claims + $amount", false)
-            ->update();
-    }
-
-    public function levelUp($userId): void
-    {
-        $this->db->table('users')
-            ->where('id', $userId)
-            ->set('level', 'level + 1', false)
-            ->update();
-    }
-
     public function countLottery(): int
     {
         return (int) $this->db->query("SELECT COUNT(*) as cnt FROM lotteries")->getRowArray()['cnt'];

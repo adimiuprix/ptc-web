@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
+use Config\Services;
 use App\Models\M_Ptc;
 use App\Models\M_Core;
 
@@ -50,7 +51,7 @@ class Ptc extends BaseController
         if (!is_numeric($id)) {
             return redirect()
                 ->to('/ptc')
-                ->with('message', $this->faucet_alert('danger', 'Invalid Ad'));
+                ->with('message', $this->ptc_alert('danger', 'Invalid Ad'));
         }
 
         // Menampilkan data dari iklan yang di view berdasarkan id
@@ -59,108 +60,68 @@ class Ptc extends BaseController
         // Memeriksa apakah nilainya ada atau tidak null
         if (! $adsDetail) {
             return redirect()
-                ->to('/ptc')
-                ->with('message', $this->faucet_alert('danger', 'Invalid Ad'));
+                ->to('ptc')
+                ->with('message', $this->ptc_alert('danger', 'Invalid Ad'));
         }
 
         // set kunci 'start_view' dengan nilai timestamp saat ini dan simpan ke session
         session()->set('start_view', time());
 
         return $this->response->setBody(view('ptc_view_ads', [
-                'ads' => $adsDetail
-            ]));
+            'ads' => $adsDetail
+        ]));
     }
 
     public function verify($id = 0)
     {
-        helper('text');
-
         session()->remove('start_view');
+        $user_id = session()->get('user_id');
 
         if (!is_numeric($id)) {
-            session()->setFlashdata('message', faucet_alert('danger', 'Invalid Click'));
-            return redirect()->to('/ptc');
+            return redirect()->to('ptc')->with('message', $this->ptc_alert('danger', 'Invalid Click'));
         }
 
-        $ad = $this->m_ptc->get_ads_from_id($id);
+        $adsDetail = $this->m_ptc->getAdById($id);
+        
         $startTime = session()->get('start_view') ?? time();
+        
+        if (time() - $startTime < $adsDetail['timer']) {
+            return redirect()
+            ->to('ptc')
+            ->with('message', $this->ptc_alert('danger', 'Invalid Click'));
+        }
 
-        if (!$ad || (time() - $startTime < $ad['timer'])) {
-            session()->setFlashdata('message', faucet_alert('danger', 'Invalid Click'));
+        if ($adsDetail['views'] >= $adsDetail['total_view']) {
+            session()->setFlashdata('message', $this->ptc_alert('danger', 'This Ad has reached maximum views'));
             return redirect()->to('/ptc');
         }
 
-        if ($ad['views'] >= $ad['total_view']) {
-            session()->setFlashdata('message', faucet_alert('danger', 'This Ad has reached maximum views'));
-            return redirect()->to('/ptc');
-        }
-
-        if ($this->request->getPost('token') !== $this->data['user']['token']) {
-            session()->setFlashdata('message', faucet_alert('danger', 'Invalid Claim'));
-            return redirect()->to('/faucet');
-        }
-
-        $captcha = $this->request->getPost('captcha');
-        $Check_captcha = false;
-
-        setcookie('captcha', $captcha, time() + 86400 * 10);
-
-        switch ($captcha) {
-            case "recaptchav3":
-                $Check_captcha = $this->verifyRecaptchaV3(
-                    $this->request->getPost('recaptchav3'),
-                    $this->data['settings']['recaptcha_v3_secret_key']
-                );
-                break;
-            case "recaptchav2":
-                $Check_captcha = $this->verifyRecaptchaV2(
-                    $this->request->getPost('g-recaptcha-response'),
-                    $this->data['settings']['recaptcha_v2_secret_key']
-                );
-                break;
-        }
-
-        if (!$Check_captcha) {
-            if ($this->data['user']['fail'] == $this->data['settings']['captcha_fail_limit']) {
-                $this->m_core->insertCheatLog($this->data['user']['id'], 'Too many wrong captcha.', 0);
-            } elseif ($this->data['user']['fail'] < 4) {
-                $this->m_core->wrongCaptcha($this->data['user']['id']);
-            }
-            session()->setFlashdata('message', faucet_alert('danger', 'Invalid Captcha'));
-            return redirect()->to('/ptc');
-        }
-
-        $check = $this->m_ptc->verify($this->data['user']['id'], $id);
+        $check = $this->m_ptc->verify($user_id, $id);
 
         if (!$check) {
-            session()->setFlashdata('message', faucet_alert('danger', 'Invalid Ad'));
-            return redirect()->to('/ptc');
+            session()->setFlashdata('message', $this->ptc_alert('danger', 'Invalid Ad'));
+            return redirect()->to('ptc');
         }
 
-        $this->m_ptc->update_user($this->data['user']['id'], $ad['reward']);
-        $this->m_core->addExp($this->data['user']['id'], $this->data['settings']['ptc_exp_reward']);
+        $this->m_ptc->updateUser($user_id, $adsDetail['reward']);
 
-        if (($this->data['user']['exp'] + $this->data['settings']['ptc_exp_reward']) >= (($this->data['user']['level'] + 1) * 100)) {
-            $this->m_core->levelUp($this->data['user']['id']);
-        }
+        // $this->m_ptc->addView($ad['id']);
+        // if (($ad['views'] + 1) == $ad['total_view']) {
+        //     $this->m_ptc->completed($ad['id']);
+        // }
 
-        $this->m_ptc->addView($ad['id']);
-        if (($ad['views'] + 1) == $ad['total_view']) {
-            $this->m_ptc->completed($ad['id']);
-        }
+        // $this->m_ptc->insert_history($this->data['user']['id'], $ad['id'], $ad['reward']);
 
-        $this->m_ptc->insert_history($this->data['user']['id'], $ad['id'], $ad['reward']);
+        // if ($this->data['user']['fail'] > 0) {
+        //     $this->resetFail($this->data['user']['id']);
+        // }
 
-        if ($this->data['user']['fail'] > 0) {
-            $this->resetFail($this->data['user']['id']);
-        }
+        // session()->setFlashdata('sweet_message', $this->faucet_sweet_alert('success', $this->currency($ad['reward'], $this->data['settings']['currency_rate']) . ' has been added to your balance'));
 
-        session()->setFlashdata('sweet_message', $this->faucet_sweet_alert('success', $this->currency($ad['reward'], $this->data['settings']['currency_rate']) . ' has been added to your balance'));
-
-        return redirect()->to('/ptc');
+        // return redirect()->to('/ptc');
     }
 
-    protected function faucet_alert($type, $content): string
+    protected function ptc_alert($type, $content): string
     {
         $icon = ($type === 'success') ? '<i class="far fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
         return '<div class="alert text-center alert-' . $type . '">' . $icon . ' ' . $content . '</div>';
@@ -183,6 +144,19 @@ class Ptc extends BaseController
     {
         $token = $amount / $rate;
         return $token . ($token > 1 ? ' tokens' : ' token');
+    }
+
+    protected function verifyCloudFlareTurnstile(): bool
+    {
+        $Captcha_result = service('curlrequest')->post(
+            'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+            ['form_params' => [
+                'secret'   => '0x4AAAAAABhLBfHeufkuSHDTc85C5F8keX8',
+                'response' => $this->request->getPost('cf-turnstile-response'),
+                'remoteip' => $this->request->getServer('HTTP_CF_CONNECTING_IP'),
+            ]]
+            )->getBody(true);
+        return json_decode($Captcha_result)->success;
     }
 
     protected function verifyRecaptchaV3($response, $secretKeys): bool
