@@ -3,19 +3,15 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
-use Config\Services;
 use App\Models\M_Ptc;
-use App\Models\M_Core;
 
 class Ptc extends BaseController
 {
     protected $m_ptc;
-    protected $m_core;
 
     public function __construct()
     {
         $this->m_ptc = new M_Ptc();
-        $this->m_core = new M_Core();
     }
 
     public function index()
@@ -74,16 +70,21 @@ class Ptc extends BaseController
 
     public function verify($id = 0)
     {
+        // Mengambil user_id dari session aktif
         $user_id = session()->get('user_id');
 
+        // Jika id iklan bukan angka, lempar ke halaman sebelumnya dengan pesan
         if (!is_numeric($id)) {
             return redirect()->to('ptc')->with('message', $this->ptc_alert('danger', 'Invalid Click'));
         }
 
+        // Menapilkan isi dari iklan yang di pilih
         $adsDetail = $this->m_ptc->getAdById($id);
 
+        // Mendapatkan nilai "start_view" dari session
         $startTime = session()->get('start_view') ?? time();
 
+        // Periksa apakah iklan bisa di claim
         if (time() - $startTime < $adsDetail['timer']) {
             return redirect()->to('ptc')->with('message', $this->ptc_alert('danger', 'Invalid Click'));
         }
